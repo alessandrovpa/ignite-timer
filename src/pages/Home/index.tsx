@@ -22,7 +22,7 @@ const taskFormValidationSchema = zod.object({
 type TaskFormData = zod.infer<typeof taskFormValidationSchema>;
 
 export function Home(){
-	const {activeTask, stopTask, createTask} = useContext(TasksContext);
+	const {activeTask, interruptActiveTask, createTask} = useContext(TasksContext);
 
 	const taskForm = useForm<TaskFormData>({
 		resolver: zodResolver(taskFormValidationSchema),
@@ -32,11 +32,11 @@ export function Home(){
 	const disableSubmit = !taskValue;
 
 	function handleStopTask(){
-		stopTask();
+		interruptActiveTask();
 	}
 
-	function handleSubmitTaskForm(data:TaskFormData){
-		createTask({title: data.task, time: data.time});
+	function handleSubmitTaskForm({task, time}:TaskFormData){
+		createTask({title: task, time});
 		taskForm.reset();
 	}
 

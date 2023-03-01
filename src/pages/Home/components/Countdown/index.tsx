@@ -33,7 +33,9 @@ export function Countdown(){
 
 		if(activeTask){
 			interval = setInterval(() => {
-				const secondsDifference = differenceInSeconds(new Date, activeTask.startDate);
+				const secondsDifference = differenceInSeconds(
+					new Date, new Date(activeTask.startDate)
+				);
 				if(secondsDifference >= taskInSeconds){
 					setCurrentTaskAsFinished();
 					clearInterval(interval);

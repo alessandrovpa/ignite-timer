@@ -1,14 +1,7 @@
-import { createContext, ReactNode, useState } from 'react';
-
-interface Task{
-	id: string;
-	title: string;
-	time: number;
-	startDate: Date;
-	interruptedDate?: Date;
-	finishedDate?: Date;
-}
-
+import { differenceInSeconds } from 'date-fns';
+import { createContext, ReactNode, useEffect, useReducer, useState } from 'react';
+import { addNewTaskAction, setTaskAsFinishedAction, setTaskAsInterruptedAction } from '../reducers/tasks/actions';
+import { Task, TaskReducer } from '../reducers/tasks/reducer';
 interface CreateTask{
   title: string;
   time: number;
@@ -21,7 +14,7 @@ interface TasksContextType{
 	setCurrentTaskAsFinished: () => void;
 	amountSecondsPasses: number;
 	updateAmountSecondsPassed: (newSeconds: number) => void;
-  stopTask: () => void;
+  interruptActiveTask: () => void;
   createTask: (data:CreateTask)=> void;
 }
 
@@ -32,11 +25,37 @@ interface TaskContextProviderProps{
 }
 
 export function TaskContextProvider({ children }:TaskContextProviderProps){
-	const [ tasks, setTasks ] = useState<Task[]>([]);
-	const [ activeTaskId, setActiveTaskId ] = useState<string | null>(null);
-	const [ amountSecondsPasses, setAmountSecondsPassed ] = useState(0);
 
+	const [ tasksState, dispatch ] = useReducer(TaskReducer, 
+		{
+			tasks: [],
+			activeTaskId: null
+		},
+		(initialState) => {
+			const storedTasks = localStorage.getItem('@ignite-timer:tasks-1.0.0');
+			if(storedTasks){
+				return JSON.parse(storedTasks);
+			}
+			return initialState;
+		}
+	);
+
+	const { tasks, activeTaskId } = tasksState;
 	const activeTask = tasks.find(task => task.id === activeTaskId);
+
+	const [ amountSecondsPasses, setAmountSecondsPassed ] = useState(() => {
+		if(activeTask){
+			return differenceInSeconds(new Date(), new Date(activeTask.startDate));
+		}
+		return 0;
+	});
+
+
+
+	useEffect(() => {
+		const tasksJSON = JSON.stringify(tasksState);
+		localStorage.setItem('@ignite-timer:tasks-1.0.0', tasksJSON);
+	}, [tasksState]);
 
 	function createTask(data:CreateTask){
 		const task:Task = {
@@ -45,42 +64,21 @@ export function TaskContextProvider({ children }:TaskContextProviderProps){
 			time: data.time,
 			startDate: new Date()
 		};
-
-		setTasks(state => [...state, task]);
-		setActiveTaskId(task.id);
+		dispatch(addNewTaskAction(task));
 		setAmountSecondsPassed(0);
 	}
 
 	function setCurrentTaskAsFinished(){
-		setActiveTaskId(null);
-
-		setTasks(state => state.map(task => {
-			if(task.id === activeTaskId){
-				return {...task, finishedDate : new Date()};
-			}
-			else{
-				return task;
-			}
-		}));
+		dispatch(setTaskAsFinishedAction());
 	}
 
 	function updateAmountSecondsPassed(newSeconds: number){
 		setAmountSecondsPassed(newSeconds);
 	}
 
-	function stopTask(){
-		setActiveTaskId(null);
-
+	function interruptActiveTask(){
 		document.title = 'Pomodoro';
-
-		setTasks(state => state.map(task => {
-			if(task.id === activeTaskId){
-				return {...task, interruptedDate : new Date()};
-			}
-			else{
-				return task;
-			}
-		}));
+		dispatch(setTaskAsInterruptedAction());
 	}
 
 	return(
@@ -91,7 +89,7 @@ export function TaskContextProvider({ children }:TaskContextProviderProps){
 			setCurrentTaskAsFinished,
 			amountSecondsPasses,
 			updateAmountSecondsPassed,
-			stopTask,
+			interruptActiveTask,
 			createTask
 		}}>
 			{children}

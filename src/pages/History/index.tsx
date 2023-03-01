@@ -1,6 +1,11 @@
+import { formatDistanceToNow } from 'date-fns';
+import ptBR from 'date-fns/locale/pt-BR';
+import { useContext } from 'react';
+import { TasksContext } from '../../contexts/TaskContext';
 import { HistoryContainer, HistoryList, Status } from './styles';
 
 export function History(){
+	const { tasks } = useContext(TasksContext);
 	return (
 		<HistoryContainer>
 			<h1>Meu histórico</h1>
@@ -16,30 +21,25 @@ export function History(){
 						</tr>
 					</thead>
 					<tbody>
-						<tr>
-							<td>Jantei</td>
-							<td>2 minutos</td>
-							<td>faz tempo</td>
-							<td>
-								<Status statusColor='yellow'>Concluido</Status>
-							</td>
-						</tr>
-						<tr>
-							<td>Jantei</td>
-							<td>2 minutos</td>
-							<td>faz tempo</td>
-							<td>
-								<Status statusColor='red'>Concluido</Status>
-							</td>
-						</tr>
-						<tr>
-							<td>Jantei</td>
-							<td>2 minutos</td>
-							<td>faz tempo</td>
-							<td>
-								<Status statusColor='green'>Concluido</Status>
-							</td>
-						</tr>
+						{tasks.map(task => {
+							return (
+								<tr key={task.id}>
+									<td>{task.title}</td>
+									<td>{task.time} minutos</td>
+									<td>{formatDistanceToNow(new Date(task.startDate), {
+										addSuffix: true,
+										locale: ptBR
+									})}</td>
+									<td>
+										{task.finishedDate && <Status statusColor='green'>Concluido</Status>}
+										{task.interruptedDate && <Status statusColor='red'>Interrompido</Status>}
+										{!task.finishedDate && !task.interruptedDate && (
+											<Status statusColor='yellow'>Em andamento</Status>)
+										}
+									</td>
+								</tr>
+							);
+						})}
 					</tbody>
 				</table>
 			</HistoryList>
